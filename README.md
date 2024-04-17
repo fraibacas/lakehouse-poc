@@ -59,6 +59,15 @@ The LakeHouse stack contains the following services:
 * `postgres`: SQL database used by Prefect, Superset and Iceberg metadata catalog
 
 
+Some of the services provide user interfaces. These are their urls:
+
+    * MinIO:       http://localhost:9001  (admin/password)
+    * Trino:       http://localhost:8091
+    * Prefect:     http://localhost:4200
+    * Superset:    http://localhost:8088  (admin/admin)
+    * Jupyter:     http://localhost:5006
+
+
 ## Data Ingestion
 
 When the enviroment is initialized, the Prefect Flow `data-to-dashboard` is automatically registered. This flow ingests `csv` or `parquet` files using DuckDB and creates a simple dashboard for the ingested data. 
@@ -80,7 +89,6 @@ A sample dataset is provided and can be ingested following the following steps:
 * Once the flow run has successfully completed, navigate to Superset UI and a dashboard with a sample table chart should display the ingested data
 
 ![](/docs/superset.png)
-
 
 ## Future updates
 
