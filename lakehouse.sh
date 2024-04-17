@@ -208,8 +208,9 @@ function print_urls() {
 	echo "   MinIO UI url:        http://localhost:9001  (admin/password)" && \
 	echo "   Trino url:           http://localhost:8091"  && \
 	echo "   Superset url:        http://localhost:8088  (admin/admin) (trino connection config trino://bla@trino:8080/sparkcognition)" && \
-	echo "   Superset swagger:    http://localhost:8088/swagger/v1" && \
 	echo "   Jupyter url:         http://localhost:5006"
+
+    # echo "   Superset swagger:    http://localhost:8088/swagger/v1" && \
 }
 
 # ------------------------------------

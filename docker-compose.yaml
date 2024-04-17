@@ -69,22 +69,22 @@ services:
   # --------------------------------------------
   #   NESSIE AS ICEBERG CATALOG (not supported by pyiceberg)
   # --------------------------------------------
-  nessie:
-    image: ${NESSIE_IMAGE}
-    container_name: nessie
-    depends_on:
-      - postgres
-    ports:
-      - "19120:19120"
-    environment:
-      - nessie.version.store.type=jdbc
-      - quarkus.datasource.db-kind=postgresql
-      - quarkus.datasource.username=${POSTGRES_USER}
-      - quarkus.datasource.password=${POSTGRES_PASSWORD}
-      - quarkus.datasource.jdbc.url=jdbc:postgresql://postgres:5432/${ICEBERG_CATALOG_DB}
-      - nessie.server.authentication.enabled=false
-    networks:
-      - lakehouse
+  # nessie:
+  #   image: ${NESSIE_IMAGE}
+  #   container_name: nessie
+  #   depends_on:
+  #     - postgres
+  #   ports:
+  #     - "19120:19120"
+  #   environment:
+  #     - nessie.version.store.type=jdbc
+  #     - quarkus.datasource.db-kind=postgresql
+  #     - quarkus.datasource.username=${POSTGRES_USER}
+  #     - quarkus.datasource.password=${POSTGRES_PASSWORD}
+  #     - quarkus.datasource.jdbc.url=jdbc:postgresql://postgres:5432/${ICEBERG_CATALOG_DB}
+  #     - nessie.server.authentication.enabled=false
+  #   networks:
+  #     - lakehouse
   # --------------------------------------------
   #   SPARK CONFIGURED FOR ICEBERG AND NESSIE
   # --------------------------------------------

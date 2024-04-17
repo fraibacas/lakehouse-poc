@@ -20,7 +20,7 @@ pull:
 # the deployments section allows you to provide configuration for deploying flows
 deployments:
 - name: dev
-  tags: ["iceberg-ingestion-no-spark"]
+  tags: ["iceberg-ingestion-prefect"]
   description: "flow that ingests data into iceberg without using spark"
   entrypoint: ingestion.py:data_to_dashboard
   parameters: {}
