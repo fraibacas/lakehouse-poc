@@ -1,0 +1,242 @@
+x-minio-aws-env: &minio-aws-env
+  AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+  AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+  AWS_REGION: us-east-1
+  AWS_DEFAULT_REGION: us-east-1
+  MINIO_REGION: us-east-1
+
+# version: "3.9"
+
+services:
+  # --------------------------------------------
+  #           MinIO for table storage
+  # --------------------------------------------
+  minio:
+    image: ${MINIO_IMAGE}
+    container_name: minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_DOMAIN: ${MINIO_DOMAIN}
+    ports:
+      - 9001:9001
+      - 9000:9000
+    command: ["server", "/data", "--console-address", ":9001"]
+    volumes:
+      - ./volumes/minio:/data
+    networks:
+      lakehouse:
+          aliases:
+            - ${WAREHOUSE_BUCKET_NAME}.minio # FIXME: figure out how this value is needed by rest catalog. cant find it in config
+  #-----------------------------------------------
+  #   POSTGRES AS DATASTORE FOR ICEBERG CATALOG
+  #-----------------------------------------------
+  postgres:
+    image: ${POSTGRES_IMAGE}
+    container_name: postgres
+    ports:
+     - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      # POSTGRES_DB: postgres
+      PGDATA: /var/lib/postgresql/data/pg_data
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - ${PWD}/volumes/postgres:/var/lib/postgresql/data/pg_data
+    networks:
+      - lakehouse
+  # --------------------------------------------
+  #            REST ICEBERG CATALOG
+  # --------------------------------------------
+  iceberg: # https://github.com/tabular-io/iceberg-rest-image
+    image: ${REST_CATALOG_IMAGE}
+    container_name: iceberg-rest
+    ports:
+      - 8181:8181
+    environment:
+      << : [ *minio-aws-env ]
+      CATALOG_WAREHOUSE: s3://${WAREHOUSE_BUCKET_NAME}/
+      CATALOG_IO__IMPL: org.apache.iceberg.aws.s3.S3FileIO
+      CATALOG_S3_ENDPOINT: http://minio:9000
+      # 
+      CATALOG_URI: jdbc:postgresql://postgres:5432/${ICEBERG_CATALOG_DB}
+      CATALOG_JDBC_USER: ${POSTGRES_USER}
+      CATALOG_JDBC_PASSWORD: ${POSTGRES_PASSWORD}
+      REST_PORT: 8181
+    networks:
+      - lakehouse
+  # --------------------------------------------
+  #   NESSIE AS ICEBERG CATALOG (not supported by pyiceberg)
+  # --------------------------------------------
+  nessie:
+    image: ${NESSIE_IMAGE}
+    container_name: nessie
+    depends_on:
+      - postgres
+    ports:
+      - "19120:19120"
+    environment:
+      - nessie.version.store.type=jdbc
+      - quarkus.datasource.db-kind=postgresql
+      - quarkus.datasource.username=${POSTGRES_USER}
+      - quarkus.datasource.password=${POSTGRES_PASSWORD}
+      - quarkus.datasource.jdbc.url=jdbc:postgresql://postgres:5432/${ICEBERG_CATALOG_DB}
+      - nessie.server.authentication.enabled=false
+    networks:
+      - lakehouse
+  # --------------------------------------------
+  #   SPARK CONFIGURED FOR ICEBERG AND NESSIE
+  # --------------------------------------------
+  # spark-master:
+  #   container_name: spark-master
+  #   image: ${SPARK_IMAGE}
+  #   ports:
+  #     - "9090:8080"
+  #     - "7077:7077"
+  #     - "4040:4040"
+  #   volumes:
+  #     - ${SPARK_DEFAULTS_CONFIG}:/opt/spark/conf/spark-defaults.conf
+  #     - ${PYICEBERG_CONFIG}:/root/.pyiceberg.yaml
+  #     - ./volumes/spark/apps:/opt/spark-apps
+  #     - ./volumes/spark/data:/opt/spark-data
+  #     - ./data:${LAKEHOUSE_DATA_PATH}
+  #   environment:
+  #     SPARK_LOCAL_IP: spark-master
+  #     # SPARK_WORKLOAD=master
+  #     # needed to start worker in same container as master
+  #     SPARK_WORKLOAD: standalone
+  #     SPARK_MASTER: spark://spark-master:7077
+  #     SPARK_WORKER_CORES: 1
+  #     SPARK_WORKER_MEMORY: 1G
+  #     SPARK_DRIVER_MEMORY: 1G
+  #     SPARK_EXECUTOR_MEMORY: 1G
+  #     << : [ *minio-aws-env ]
+  #   networks:
+  #     lakehouse:
+  # --------------------------------------------
+  #                 TRINO
+  # --------------------------------------------
+  trino:
+    container_name: trino
+    image: ${TRINO_IMAGE}
+    ports:
+      - "8091:8080"
+    volumes:
+      - ./volumes/config/trino-catalog.properties:/etc/trino/catalog/${CATALOG_NAME}.properties
+    networks:
+      - lakehouse
+  # --------------------------------------------
+  #                 SUPERSET
+  # --------------------------------------------
+  superset:
+    container_name: superset
+    image: ${SUPERSET_IMAGE}
+    ports:
+      - "8088:8088"
+    environment:
+      ADMIN_USERNAME: admin
+      ADMIN_EMAIL: admin@superset.com
+      ADMIN_PASSWORD: admin
+      SUPERSET_CONFIG_PATH: /app/superset_config.py
+    volumes:
+      - ./config/superset_config.py:/app/superset_config.py
+      - ./data:${LAKEHOUSE_DATA_PATH}
+    networks:
+      - lakehouse
+  # --------------------------------------------
+  #                 JUPYTER LAB
+  # --------------------------------------------
+  jupyter:
+    container_name: jupyter
+    # image: ${JUPYTER_IMAGE}
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM ${PREFECT_IMAGE}
+        RUN apt-get update && apt-get install -y vim ca-certificates git-all && \
+            python -m pip install --upgrade pip
+        COPY ./data/pipelines/requirements.txt /tmp/requirements.txt
+        RUN pip install --no-cache-dir -r /tmp/requirements.txt
+        RUN pip install "jupyterlab<3.6"
+    ports:
+      - "5006:5006"
+    volumes:
+      - ${SPARK_DEFAULTS_CONFIG}:/opt/spark/conf/spark-defaults.conf
+      - ${PYICEBERG_CONFIG}:/root/.pyiceberg.yaml
+      - ./volumes/jupyter/ivy2:/root/.ivy2
+      - ./data:${LAKEHOUSE_DATA_PATH}
+    entrypoint: [
+      "jupyter", "lab", "--ip=0.0.0.0", "--port=5006", "--no-browser", "--allow-root",
+      "--NotebookApp.notebook_dir='${LAKEHOUSE_DATA_PATH}'", "--NotebookApp.token=''"
+    ]
+    environment:
+      << : [ *minio-aws-env ]
+      PYTHONPATH: ${LAKEHOUSE_DATA_PATH}/scripts:${LAKEHOUSE_DATA_PATH}/pipelines
+      LAKEHOUSE_DATA_PATH: ${LAKEHOUSE_DATA_PATH}
+      CATALOG_NAME: ${CATALOG_NAME}
+    networks:
+      - lakehouse
+  # --------------------------------------#
+  #             Prefect Server            #
+  # --------------------------------------#
+  prefect-server:
+    container_name: prefect-server
+    image: ${PREFECT_IMAGE}
+    command: >
+      bash -c "prefect server start"
+    ports:
+      - 4200:4200
+    depends_on:
+      postgres:
+        condition: service_started
+    volumes:
+      - ${PWD}/volumes/prefect:/root/.prefect
+      - ./data:${LAKEHOUSE_DATA_PATH}
+    environment:
+      PREFECT_SERVER_API_HOST: 0.0.0.0
+      PREFECT_API_DATABASE_CONNECTION_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${PREFECT_DATABASE}
+      PREFECT_SERVER_ANALYTICS_ENABLED: "false"
+      PREFECT_LOGGING_SERVER_LEVEL: WARNING
+      PREFECT_API_URL: http://${HOST_OR_IP}:4200/api
+    networks:
+      - lakehouse
+  # --------------------------------------#
+  #             Prefect Worker            #
+  # --------------------------------------#
+  prefect-worker:
+    container_name: prefect-worker
+    # image: ${PREFECT_IMAGE}
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM ${PREFECT_IMAGE}
+        RUN apt-get update && apt-get install -y vim ca-certificates git-all && \
+            python -m pip install --upgrade pip
+        COPY ./data/pipelines/requirements.txt /tmp/requirements.txt
+        RUN pip install --no-cache-dir -r /tmp/requirements.txt
+    command:
+      - prefect
+      - worker
+      - start
+      - --pool
+      - ${PREFECT_WORKER_POOL}
+    depends_on:
+      prefect-server:
+        condition: service_started
+    environment:
+      PREFECT_API_URL: http://${HOST_OR_IP}:4200/api
+      PREFECT_LOGGING_LEVEL: INFO
+      DOCKER_HOST: unix://var/run/docker.sock
+      PYTHONPATH: ${LAKEHOUSE_DATA_PATH}/scripts:${LAKEHOUSE_DATA_PATH}/pipelines
+      LAKEHOUSE_DATA_PATH: ${LAKEHOUSE_DATA_PATH}
+      CATALOG_NAME: ${CATALOG_NAME}
+    volumes:
+      - ./data:${LAKEHOUSE_DATA_PATH}
+      - ${PYICEBERG_CONFIG}:/root/.pyiceberg.yaml
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - lakehouse
+networks:
+  lakehouse:
+    name: lakehouse

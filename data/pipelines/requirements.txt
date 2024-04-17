@@ -1,0 +1,11 @@
+# pyspark==3.4.1
+elasticsearch
+python-dotenv
+pandas>=1.0.5
+pyArrow>=4.0.0
+grpcio>=1.48.1
+grpcio-tools
+grpcio-status
+pyiceberg==0.6.0
+duckdb
+trino

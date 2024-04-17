@@ -1,0 +1,11 @@
+catalog:
+    default:
+        uri: ${ICEBERG_CATALOG_URI}
+        s3.endpoint: ${S3_ENDPOINT}
+        s3.access-key-id: ${MINIO_ROOT_USER}
+        s3.secret-access-key: ${MINIO_ROOT_PASSWORD}
+    ${CATALOG_NAME}:
+        uri: ${ICEBERG_CATALOG_URI}
+        s3.endpoint: ${S3_ENDPOINT}
+        s3.access-key-id: ${MINIO_ROOT_USER}
+        s3.secret-access-key: ${MINIO_ROOT_PASSWORD}
