@@ -129,6 +129,7 @@ EOSQL"
 function start_lakehouse() {
     start_databases
     ${DOCKER_COMPOSE} up -d --force-recreate --no-deps \
+                    traefik \
                     minio \
                     ${ICEBERG_CATALOG_SVC} \
                     trino \
@@ -205,11 +206,12 @@ function print_urls() {
     echo "--------------------------------------------" && \
 	echo "           ENVIRONMENT LOCAL URLS " && \
 	echo "--------------------------------------------" && \
-	echo "   MinIO UI url:        http://localhost:9001  (admin/password)" && \
-	echo "   Trino url:           http://localhost:8091"  && \
-	echo "   Superset url:        http://localhost:8088  (admin/admin) (trino connection config trino://bla@trino:8080/sparkcognition)" && \
-	echo "   Jupyter url:         http://localhost:5006"
-
+	echo "   Prefect url:                     http://localhost:4200   http://prefect.lakehouse.localhost" && \
+	echo "   Jupyter url:                     http://localhost:5006   http://jupyter.lakehouse.localhost" && \
+	echo "   Superset url (admin/admin):      http://localhost:8088   http://superset.lakehouse.localhost"
+    # echo "(trino connection config trino://bla@trino:8080/sparkcognition)"
+    # echo "   Trino url:           http://localhost:8091"  && \
+    # echo "   MinIO UI url:        http://localhost:9001  (admin/password)" && \
     # echo "   Superset swagger:    http://localhost:8088/swagger/v1" && \
 }
 

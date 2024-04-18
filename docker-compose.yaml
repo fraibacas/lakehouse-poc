@@ -9,6 +9,29 @@ x-minio-aws-env: &minio-aws-env
 
 services:
   # --------------------------------------------
+  #           Traefik load balancer
+  # --------------------------------------------
+  traefik:
+    container_name: traefik
+    image: ${TRAEFIK_IMAGE}
+    command:
+      # - "--log.level=DEBUG"
+      - "--api.insecure=true"
+      # - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      # - "--entrypoints.websecure.address=:443"
+      - "--serversTransport.insecureSkipVerify=true"
+    ports:
+      - "80:80"
+      # - "443:443"
+      # - "8081:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    networks:
+      - lakehouse
+  # --------------------------------------------
   #           MinIO for table storage
   # --------------------------------------------
   minio:
@@ -28,14 +51,20 @@ services:
       lakehouse:
           aliases:
             - ${WAREHOUSE_BUCKET_NAME}.minio # FIXME: figure out how this value is needed by rest catalog. cant find it in config
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.minio.entrypoints=web"
+      - "traefik.http.routers.minio.rule=Host(`minio.${DOMAIN}`)"
+      - "traefik.http.services.minio.loadbalancer.server.port=9001"
+      - "traefik.http.services.minio.loadbalancer.server.scheme=http"
   #-----------------------------------------------
   #   POSTGRES AS DATASTORE FOR ICEBERG CATALOG
   #-----------------------------------------------
   postgres:
     image: ${POSTGRES_IMAGE}
     container_name: postgres
-    ports:
-     - "5432:5432"
+    # ports:
+    #  - "5432:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -52,8 +81,8 @@ services:
   iceberg: # https://github.com/tabular-io/iceberg-rest-image
     image: ${REST_CATALOG_IMAGE}
     container_name: iceberg-rest
-    ports:
-      - 8181:8181
+    # ports:
+    #   - 8181:8181
     environment:
       << : [ *minio-aws-env ]
       CATALOG_WAREHOUSE: s3://${WAREHOUSE_BUCKET_NAME}/
@@ -120,12 +149,18 @@ services:
   trino:
     container_name: trino
     image: ${TRINO_IMAGE}
-    ports:
-      - "8091:8080"
+    # ports:
+    #   - "8091:8080"
     volumes:
       - ./volumes/config/trino-catalog.properties:/etc/trino/catalog/${CATALOG_NAME}.properties
     networks:
       - lakehouse
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.trino.entrypoints=web"
+      - "traefik.http.routers.trino.rule=Host(`trino.${DOMAIN}`)"
+      - "traefik.http.services.trino.loadbalancer.server.port=8080"
+      - "traefik.http.services.trino.loadbalancer.server.scheme=http"
   # --------------------------------------------
   #                 SUPERSET
   # --------------------------------------------
@@ -144,6 +179,12 @@ services:
       - ./data:${LAKEHOUSE_DATA_PATH}
     networks:
       - lakehouse
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.superset.entrypoints=web"
+      - "traefik.http.routers.superset.rule=Host(`superset.${DOMAIN}`)"
+      - "traefik.http.services.superset.loadbalancer.server.port=8088"
+      - "traefik.http.services.superset.loadbalancer.server.scheme=http"
   # --------------------------------------------
   #                 JUPYTER LAB
   # --------------------------------------------
@@ -177,6 +218,12 @@ services:
       CATALOG_NAME: ${CATALOG_NAME}
     networks:
       - lakehouse
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jupyter.entrypoints=web"
+      - "traefik.http.routers.jupyter.rule=Host(`jupyter.${DOMAIN}`)"
+      - "traefik.http.services.jupyter.loadbalancer.server.port=5006"
+      - "traefik.http.services.jupyter.loadbalancer.server.scheme=http"
   # --------------------------------------#
   #             Prefect Server            #
   # --------------------------------------#
@@ -201,6 +248,12 @@ services:
       PREFECT_API_URL: http://${HOST_OR_IP}:4200/api
     networks:
       - lakehouse
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.prefect.entrypoints=web"
+      - "traefik.http.routers.prefect.rule=Host(`prefect.${DOMAIN}`)"
+      - "traefik.http.services.prefect.loadbalancer.server.port=4200"
+      - "traefik.http.services.prefect.loadbalancer.server.scheme=http"
   # --------------------------------------#
   #             Prefect Worker            #
   # --------------------------------------#

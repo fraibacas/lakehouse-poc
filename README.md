@@ -17,6 +17,7 @@ In order to run the stack a Linux, Windows or MacOS computer with the following 
 Notes:
 * The docker-compose version should support `dockerfile_inline` which was released in version [2.17](https://github.com/docker/compose/releases/tag/v2.17.0)
 * Windows deployment has not been tested but it should work with WSL and Docker Desktop
+* The following ports should be available: 80, 4200, 5006, 8088
 
 
 ## Getting Started
@@ -49,6 +50,7 @@ Initizalization will automatically run the first time the environment is started
 
 The LakeHouse stack contains the following services:
 
+* `traefik`: Reverse proxy.
 * `iceberg`: Iceberg metadata catalog.
 * `minio`: table storage for Iceberg.
 * `trino`: query engine.
@@ -60,13 +62,19 @@ The LakeHouse stack contains the following services:
 
 
 Some of the services provide user interfaces. These are their urls:
+* Prefect:     http://localhost:4200
+* Superset:    http://localhost:8088  (admin/admin)
+* Jupyter:     http://localhost:5006
 
-    * MinIO:       http://localhost:9001  (admin/password)
-    * Trino:       http://localhost:8091
-    * Prefect:     http://localhost:4200
-    * Superset:    http://localhost:8088  (admin/admin)
-    * Jupyter:     http://localhost:5006
+Alteratively, the following urls can be used after updating your `/etc/hosts`.
+* Jupyter:     http://jupyter.lakehouse.localhost
+* Prefect:     http://prefect.lakehouse.localhost
+* Superset:    http://superset.lakehouse.localhost
 
+```
+# /etc/hosts
+127.0.0.1 jupyter.lakehouse.localhost prefect.lakehouse.localhost superset.lakehouse.localhost trino.lakehouse.localhost minio.lakehouse.localhost
+```
 
 ## Data Ingestion
 
