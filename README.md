@@ -76,7 +76,7 @@ When the enviroment is initialized, the Prefect Flow `data-to-dashboard` is auto
 
 A sample dataset is provided and can be ingested following the following steps:
 
-* Navigate to Precfect's UI -> Deployments.
+* Navigate to Prefect's UI -> Deployments.
 * Click on the three dots to the right of the `data-to-dashboard:dev` deployment.
 * Select `Quick run`.
 
@@ -107,7 +107,7 @@ A sample jupyter notebook is provided with code to ingest and query a parquet fi
 Custom csv or parquet files can be ingested with Prefect:
 
 * Copy the data file into folder `data/datasets`.
-* Navigate to Precfect's UI -> Deployments.
+* Navigate to Prefect's UI -> Deployments.
 * Click on the three dots to the right of the `data-to-dashboard:dev` deployment.
 * Select `Custom run`.
 * Set the url for your file. It should start with `/lakehouse-poc/datasets/`.
