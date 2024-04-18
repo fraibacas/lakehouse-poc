@@ -21,7 +21,7 @@ Notes:
 
 ## Getting Started
 
-* Clone this repository and `cd` into it
+* Clone this repository and `cd` into it.
 * Use the `lakehouse.sh` bash script to start/stop the stack. Options:
     - `lakehouse.sh start`: initialize environment (if needed) and start all services.
     - `lakehouse.sh stop`: stop all services.
@@ -56,7 +56,7 @@ The LakeHouse stack contains the following services:
 * `jupyter`: notebook configured to access Iceberg and Trino.
 * `prefect-server`: workflow engine server used for data ingestion.
 * `prefect-worker`: workflow engine worker.
-* `postgres`: SQL database used by Prefect, Superset and Iceberg metadata catalog
+* `postgres`: SQL database used by Prefect, Superset and Iceberg metadata catalog.
 
 
 Some of the services provide user interfaces. These are their urls:
@@ -72,23 +72,53 @@ Some of the services provide user interfaces. These are their urls:
 
 When the enviroment is initialized, the Prefect Flow `data-to-dashboard` is automatically registered. This flow ingests `csv` or `parquet` files using DuckDB and creates a simple dashboard for the ingested data. 
 
-### Ingesting sample data
+### Ingesting sample data with Prefect
 
 A sample dataset is provided and can be ingested following the following steps:
 
-* Navigate to Precfect's UI -> Deployments
-* Click on the three dots to the right of the `data-to-dashboard:dev` deployment
-* Select `Quick run`
+* Navigate to Precfect's UI -> Deployments.
+* Click on the three dots to the right of the `data-to-dashboard:dev` deployment.
+* Select `Quick run`.
 
 ![](/docs/prefect_deployment.png)
 
-* After the flow run is started, you can navigate to the `Flow Runs` section and see the flow's logs
+* After the flow run is started, you can navigate to the `Flow Runs` section and see the flow's logs.
 
 ![](/docs/prefect_flow_run.png)
 
-* Once the flow run has successfully completed, navigate to Superset UI and a dashboard with a sample table chart should display the ingested data
+* Once the flow run has successfully completed, navigate to Superset UI. A dashboard with a sample table chart should be available.
 
 ![](/docs/superset.png)
+
+### Ingesting sample data with Jupyter
+
+A sample jupyter notebook is provided with code to ingest and query a parquet file:
+
+* Navigate to Jupiter's UI.
+* Open the notebook `notebooks/lakehouse.ipynb.
+
+![](/docs/jupyter.png)
+
+* Run the notebook.
+* Once the notebook successfully ran, navigate to Superset UI. A dashboard with a sample table chart should be available.
+
+### Ingesting your own data with Prefect
+
+Custom csv or parquet files can be ingested with Prefect:
+
+* Copy the data file into folder `data/datasets`.
+* Navigate to Precfect's UI -> Deployments.
+* Click on the three dots to the right of the `data-to-dashboard:dev` deployment.
+* Select `Custom run`.
+* Set the url for your file. It should start with `/lakehouse-poc/datasets/`.
+
+![](/docs/prefect_custom_run.png)
+
+* Set database name (Iceberg namespace) and table name.
+* All other parameters are optional and apply to csv files only.
+* Click on `Submit`.
+* After the flow run is started, you can navigate to the `Flow Runs` section and see the flow's logs.
+* Once the notebook successfully ran, navigate to Superset UI. A dashboard with a sample table chart should be available. A `datetime` column is required for the dashboard to work.
 
 ## Future updates
 
