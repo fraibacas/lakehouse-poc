@@ -16,6 +16,7 @@ In order to run the stack a Linux, Windows or MacOS computer with the following 
 
 Notes:
 
+* Minimum Docker resources: 4 cores and 8Gb of RAM
 * Windows deployment has not been tested but it should work with WSL and Docker Desktop
 * The following ports should be available: 80, 4200, 5006, 8088
 
