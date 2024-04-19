@@ -15,7 +15,7 @@ In order to run the stack a Linux, Windows or MacOS computer with the following 
 * wget
 
 Notes:
-* The docker-compose version should support `dockerfile_inline` which was released in version [2.17](https://github.com/docker/compose/releases/tag/v2.17.0)
+
 * Windows deployment has not been tested but it should work with WSL and Docker Desktop
 * The following ports should be available: 80, 4200, 5006, 8088
 

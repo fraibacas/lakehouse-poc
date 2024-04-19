@@ -190,16 +190,16 @@ services:
   # --------------------------------------------
   jupyter:
     container_name: jupyter
-    # image: ${JUPYTER_IMAGE}
-    build:
-      context: .
-      dockerfile_inline: |
-        FROM ${PREFECT_IMAGE}
-        RUN apt-get update && apt-get install -y vim ca-certificates git-all && \
-            python -m pip install --upgrade pip
-        COPY ./data/pipelines/requirements.txt /tmp/requirements.txt
-        RUN pip install --no-cache-dir -r /tmp/requirements.txt
-        RUN pip install "jupyterlab<3.6"
+    image: ${JUPYTER_IMAGE}
+    # build:
+    #   context: .
+    #   dockerfile_inline: |
+    #     FROM ${PREFECT_IMAGE}
+    #     RUN apt-get update && apt-get install -y vim ca-certificates git-all && \
+    #         python -m pip install --upgrade pip
+    #     COPY ./data/pipelines/requirements.txt /tmp/requirements.txt
+    #     RUN pip install --no-cache-dir -r /tmp/requirements.txt
+    #     RUN pip install "jupyterlab<3.6"
     ports:
       - "5006:5006"
     volumes:
@@ -259,15 +259,15 @@ services:
   # --------------------------------------#
   prefect-worker:
     container_name: prefect-worker
-    # image: ${PREFECT_IMAGE}
-    build:
-      context: .
-      dockerfile_inline: |
-        FROM ${PREFECT_IMAGE}
-        RUN apt-get update && apt-get install -y vim ca-certificates git-all && \
-            python -m pip install --upgrade pip
-        COPY ./data/pipelines/requirements.txt /tmp/requirements.txt
-        RUN pip install --no-cache-dir -r /tmp/requirements.txt
+    image: ${INGESTION_IMAGE}
+    # build:
+    #   context: .
+    #   dockerfile_inline: |
+    #     FROM ${PREFECT_IMAGE}
+    #     RUN apt-get update && apt-get install -y vim ca-certificates git-all && \
+    #         python -m pip install --upgrade pip
+    #     COPY ./data/pipelines/requirements.txt /tmp/requirements.txt
+    #     RUN pip install --no-cache-dir -r /tmp/requirements.txt
     command:
       - prefect
       - worker

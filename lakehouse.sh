@@ -166,12 +166,27 @@ function initialize() {
 }
 
 function ensure_images() {
+    ${DOCKER_COMPOSE} pull iceberg traefik minio trino postgres prefect-server
     local superset_image_hash=$(docker images -q ${SUPERSET_IMAGE} 2> /dev/null)
     if [ -z "${superset_image_hash}" ]; then
         echo "building superset docker image ...";
         docker build \
             -f build/superset/Dockerfile -t ${SUPERSET_IMAGE} \
             --build-arg SUPERSET_BASE_IMAGE=${SUPERSET_BASE_IMAGE} build/superset
+    fi
+    local ingestion_image_hash=$(docker images -q ${INGESTION_IMAGE} 2> /dev/null)
+    if [ -z "${ingestion_image_hash}" ]; then
+        echo "building ingestion docker image ...";
+        docker build \
+            -f build/prefect/Dockerfile -t ${INGESTION_IMAGE} \
+            --build-arg INGESTION_BASE_IMAGE=${PREFECT_IMAGE} .
+    fi
+    local jupyter_image_hash=$(docker images -q ${JUPYTER_IMAGE} 2> /dev/null)
+    if [ -z "${jupyter_image_hash}" ]; then
+        echo "building jupyter docker image ...";
+        docker build \
+            -f build/jupyter/Dockerfile -t ${JUPYTER_IMAGE} \
+            --build-arg JUPYTER_BASE_IMAGE=${INGESTION_IMAGE} .
     fi
 }
 
