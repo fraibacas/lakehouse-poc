@@ -17,8 +17,8 @@ In order to run the stack a Linux, Windows or MacOS computer with the following 
 Notes:
 
 * Minimum Docker resources: 4 cores and 8Gb of RAM
-* Windows deployment has not been tested but it should work with WSL and Docker Desktop
 * The following ports should be available: 80, 4200, 5006, 8088
+* For Windows WSL is required
 
 
 ## Getting Started
@@ -30,6 +30,7 @@ Notes:
     - `lakehouse.sh restart`: restart all services.
     - `lakehouse.sh status`: displays services' status.
     - `lakehouse.sh reset`: reset environment. All ingested data will be deleted.
+    - `lakehouse.sh build`: rebuilds docker images.
 
 
 ## Environment Configuration and Initizalization
@@ -128,6 +129,15 @@ Custom csv or parquet files can be ingested with Prefect:
 * Click on `Submit`.
 * After the flow run is started, you can navigate to the `Flow Runs` section and see the flow's logs.
 * Once the notebook successfully ran, navigate to Superset UI. A dashboard with a sample table chart should be available. A `datetime` column is required for the dashboard to work.
+
+### Updating Prefect ingestion flow
+
+You can update the ingestion code for your own use case by updating file `./data/pipelines/ingestion.py`. The code is mounted into the docker container, so next time the flow is run it will pick up the updates. If new dependencies are needed, add them to `./data/pipelines/requirements.txt`, run `./lakehouse.sh build` and restart the enviroment with `./lakehouse.sh restart`.
+
+### Creating you own charts / dashboards
+
+Superset provides lots of different charts, you can create new charts and add them to dashboards. The ingestion pipeline sets up a dataset for your csv/parquet file on top of which new charts can be created.
+
 
 ## Future updates
 
