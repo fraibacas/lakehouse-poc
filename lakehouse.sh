@@ -165,28 +165,40 @@ function initialize() {
     touch ${INITIALIZED_MARKER}
 }
 
+function build_superset_image() {
+    echo "building superset docker image ...";
+    docker build \
+        -f build/superset/Dockerfile -t ${SUPERSET_IMAGE} \
+        --build-arg SUPERSET_BASE_IMAGE=${SUPERSET_BASE_IMAGE} build/superset
+}
+
+function build_ingestion_image() {
+    echo "building ingestion docker image ...";
+    docker build \
+        -f build/prefect/Dockerfile -t ${INGESTION_IMAGE} \
+        --build-arg INGESTION_BASE_IMAGE=${PREFECT_IMAGE} .
+}
+
+function build_jupyter_image() {
+    echo "building jupyter docker image ...";
+    docker build \
+        -f build/jupyter/Dockerfile -t ${JUPYTER_IMAGE} \
+        --build-arg JUPYTER_BASE_IMAGE=${INGESTION_IMAGE} .
+}
+
 function ensure_images() {
     ${DOCKER_COMPOSE} pull iceberg traefik minio trino postgres prefect-server
     local superset_image_hash=$(docker images -q ${SUPERSET_IMAGE} 2> /dev/null)
     if [ -z "${superset_image_hash}" ]; then
-        echo "building superset docker image ...";
-        docker build \
-            -f build/superset/Dockerfile -t ${SUPERSET_IMAGE} \
-            --build-arg SUPERSET_BASE_IMAGE=${SUPERSET_BASE_IMAGE} build/superset
+        build_superset_image
     fi
     local ingestion_image_hash=$(docker images -q ${INGESTION_IMAGE} 2> /dev/null)
     if [ -z "${ingestion_image_hash}" ]; then
-        echo "building ingestion docker image ...";
-        docker build \
-            -f build/prefect/Dockerfile -t ${INGESTION_IMAGE} \
-            --build-arg INGESTION_BASE_IMAGE=${PREFECT_IMAGE} .
+        build_ingestion_image
     fi
     local jupyter_image_hash=$(docker images -q ${JUPYTER_IMAGE} 2> /dev/null)
     if [ -z "${jupyter_image_hash}" ]; then
-        echo "building jupyter docker image ...";
-        docker build \
-            -f build/jupyter/Dockerfile -t ${JUPYTER_IMAGE} \
-            --build-arg JUPYTER_BASE_IMAGE=${INGESTION_IMAGE} .
+        build_jupyter_image
     fi
 }
 
@@ -257,6 +269,12 @@ case "$1" in
         ;;
     "stop")
         stop
+        ;;
+    "build")
+        ${DOCKER_COMPOSE} pull iceberg traefik minio trino postgres prefect-server
+        build_superset_image
+        build_ingestion_image
+        build_jupyter_image
         ;;
     *)
         echo "Unknown option <$1>. Options: reset, start, stop, restart, status"
